@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -151,17 +150,21 @@ func (c *Client) Do(r Request) (Response, error) {
 		return nil, err
 	}
 
-	resp := Response{}
-	err = json.Unmarshal(body, &resp)
+	log.Printf("[DEBUG] %s", string(body))
 
+	if res.StatusCode >= 200 && res.StatusCode <= 299 {
+		resp := Response{}
+		err = json.Unmarshal(body, &resp)
+		return resp, nil
+	}
+
+	errorResp := &ErrResp{}
+	err = json.Unmarshal(body, errorResp)
 	if err != nil {
 		return nil, err
 	}
 
-	if resp[0].Error != nil {
-		return nil, errors.New(resp[0].Error.ErrorMessage.Message + "\n" + strings.Join(resp[0].Error.ErrorMessage.StackTrace, "\n"))
-	}
-	return resp, nil
+	return nil, errorResp
 }
 
 // Status provides a way to check the status of a previous command

@@ -1,5 +1,10 @@
 package ksql
 
+import (
+	"fmt"
+	"strings"
+)
+
 type ErrorMessage struct {
 	Message    string   `json:"message"`
 	StackTrace []string `json:"stackTrace"`
@@ -18,7 +23,21 @@ type Request struct {
 	streamPropertiesName string
 }
 
-type Response []struct {
+type Response []IntResponse
+
+type ErrResp struct {
+	Type         string   `json:"@type,omitempty"`
+	ErrorCode    int      `json:"error_code,omitempty"`
+	ErrorMessage string   `json:"message,omitempty"`
+	StackTrace   []string `json:"stackTrace,omitempty"`
+}
+
+func (e *ErrResp) Error() string {
+	stackTrace := strings.Join(e.StackTrace, "\n")
+	return fmt.Sprintf("%d [%s]: %s\n StackTrace:\n %s", e.ErrorCode, e.Type, e.ErrorMessage, stackTrace)
+}
+
+type IntResponse struct {
 	Error *struct {
 		StatementText string       `json:"statementText"`
 		ErrorMessage  ErrorMessage `json:"errorMessage"`
@@ -26,11 +45,11 @@ type Response []struct {
 	Streams *struct {
 		StatementText string   `json:"statementText"`
 		Streams       []Stream `json:"streams"`
-	} `json:"streams"`
+	} `json:"streams,omitempty"`
 	Tables *struct {
 		StatementText string  `json:"statementText"`
 		Tables        []Table `json:"tables"`
-	} `json:"tables"`
+	} `json:"tables,omitempty"`
 
 	Status *struct {
 		StatementText string `json:"statementText"`
